@@ -11,8 +11,6 @@
 ;             Special keys like F1-F12, Home, PgUp, PgDn, Del, etc.
 ;             will not be handled.
 ;
-;             In assembler you have as much flexibility as you want.
-;
 ;   Owner:    Xiaohang Miao (xmiao2)
 ;
 ;   Date:     Changes
@@ -23,22 +21,11 @@
          .8086                         ;only allow 8086 instructions
          .stack    256                 ;reserve 256 bytes for the stack
 ;---------------------------------------
-      
-;---------------------------------------
-         .data                         ;start the data segment
-;---------------------------------------
-list     db        ' .ABCDEFGHIJKLMNOPQRSTUVWXYZ'       ;the hello world message
-term     db        '$'                 ;dos end of string
-listlen  dw        term-list+1         ;total length of the message
-;---------------------------------------
 
 ;---------------------------------------
          .code                         ;start the code segment
 ;---------------------------------------
 
-start:
-         mov       ax,@data
-         mov       ds,ax
 ;---------------------------------------
 ; read a char from standard input
 ;---------------------------------------
@@ -46,28 +33,30 @@ read:                                  ;
          mov       ah,8                ;setup reading from standard input, no echo
          int       21h                 ;read from stadnard input
 ;---------------------------------------
-; convert to uppercase char if possible
+; check whether input is a whitespace
 ;---------------------------------------
-         cmp       al,41h              ;compare latest input with letter A
-         jb        loop_s              ;if below A, do not convert to uppercase, otherwise
-                                       ;----risking converting " " and "."
-         and       al,0DFh             ;since all characters above "Z" are either invalid
+         cmp       al," "              ;compare latest input with a space
+         je        print               ;a space is a valid character, print to console
+;---------------------------------------
+; check whether input is a period
+;---------------------------------------
+         cmp       al,"."              ;compare latest input with a period
+         je        print               ;a period is a valid character, print to console
+;---------------------------------------
+; convert to lowercase char
+;---------------------------------------
+         and       al,0DFh             ;Since all characters above "Z" are either invalid
                                        ;----or needs to be converted, a mask is used
                                        ;----to reduce the 6th bits to 0, effectively
                                        ;----minus 20h on all lowercase characters, but
                                        ;----keeps all uppercase characters un-changed
 ;---------------------------------------
-; initialize loop
+; check whether input is uppercase char
 ;---------------------------------------
-loop_s:
-         mov       cx,listlen
-         mov       si,offset list
-loop_:
-         cmp       al,[si]
-         je        print
-         inc       si
-         loop      loop_
-         jmp       read
+         cmp       al,"A"              ;compare latest input with A
+         jb        read                ;input is not within range A-Z, throw away
+         cmp       al,"Z"              ;compare latest input with Z
+         ja        read                ;input is within range A-Z, print to screen
 ;---------------------------------------
 ; print input char to standard output
 ;---------------------------------------
@@ -84,7 +73,7 @@ print:                                 ;
 exit:                                  ;
          mov       ax,4c00h            ;set dos code to terminate program
          int       21h                 ;return to dos
-         end       start               ;end marks the end of the source code
+         end       read                ;end marks the end of the source code
                                        ;....and specifies where you want the
                                        ;....program to start execution
 ;---------------------------------------
